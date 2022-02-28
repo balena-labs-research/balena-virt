@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "balena-cli": "^13.2.1",
     "mz": "^2.7.0",
     "yaml": "^1.10.2",
     "yargs": "^17.5.0"

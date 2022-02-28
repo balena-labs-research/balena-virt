@@ -1,0 +1,49 @@
+# ~ https://github.com/balena-io/autohat/blob/master/resources/qemu.robot
+templates:
+  standard:
+    machine:
+      - type: q35
+        # (TBC) not supported on AWS/EC2 unless using metal instance classes|types
+        # only supported on AMIs build on AWS Nitro System
+        accel: kvm
+    smp: cores=2
+    m: 512M
+    drive:
+      - file: /balena/standard0.qcow2
+        format: qcow2
+        if: none
+        index: 0
+        media: disk
+        id: disk
+    device:
+      - ahci:
+        id: ahci
+      - ide-hd:
+        drive: disk
+        bus: ahci.0
+      - virtio-net-pci:
+        netdev: n1
+    netdev:
+      #- "user,id=n1,dns=127.0.0.1,guestfwd=tcp:10.0.2.100:80-cmd:netcat haproxy 80,tcp:10.0.2.100:443-cmd:netcat haproxy 443"
+      - user:
+        id: n1
+        dns: 127.0.0.1
+        guestfwd:
+          # (TBC) escape spaces in command
+          #- tcp:10.0.2.100:80-cmd:nc haproxy 80
+          - tcp:10.0.2.100:443-cmd:nc haproxy 443
+    # (minicom) https://github.com/balena-io/autohat#troubleshooting
+    chardev:
+      - socket:
+        id: serial0
+        path: /tmp/console.sock
+        server: on
+        wait: off
+    serial: chardev:serial0
+    monitor: none
+    nographic:
+
+guests:
+  - template: standard
+    arch: x86_64
+    count: 1

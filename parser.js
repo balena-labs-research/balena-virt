@@ -82,8 +82,7 @@ module.exports = {
 			);
 		}
 
+		console.log(`cmdline: ${cmdline}`);
 		return cmdline;
 	}
 };
-
-

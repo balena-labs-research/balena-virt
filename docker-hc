@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2154,SC2034,SC1090
+set -ea
+
+[[ $VERBOSE =~ on|On|Yes|yes|true|True ]] && set -x
+
+conf=${CONF:-/balena/${BALENA_DEVICE_UUID}.${DNS_TLD}.env}
+test_fleet=${TEST_FLEET:-test-fleet}
+
+function open_balena_login() {
+	balena login --credentials \
+	  --email "${SUPERUSER_EMAIL}" \
+	  --password "${SUPERUSER_PASSWORD}"
+}
+
+function check_device_status() {
+	if [[ -e /balena/config.json ]]; then
+		balena_device_uuid="$(cat < /balena/config.json | jq -r .uuid)"
+
+		if [[ -n $balena_device_uuid ]]; then
+			is_online="$(balena devices --json --fleet "${test_fleet}" \
+			  | jq -r --arg uuid "${balena_device_uuid}" '.[] | select(.uuid==$uuid).is_online == true')"
+
+			if [[ $is_online =~ true ]]; then
+				exit 0
+			else
+				exit 1
+			fi
+		fi
+	fi
+}
+
+[[ -f $conf ]] && source "${conf}"
+
+BALENARC_BALENA_URL="${DNS_TLD}"
+
+balena whoami || open_balena_login
+
+if [[ $TLD =~ ^.*\.local\.? ]]; then
+    # mDNS configurations not supported
+    exit 0
+else
+    check_device_status
+fi
