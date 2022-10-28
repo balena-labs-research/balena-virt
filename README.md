@@ -74,8 +74,8 @@ After converting our raw image to qcow2, we can create additional CoW snapshot i
 
 ```bash
 $ for i in {0..4}; do \
-qemu-img create -f qcow2 -F qcow2 -b rootfs.qcow2 guest${i}.qcow2 32G \
-done
+qemu-img create -f qcow2 -F qcow2 -b rootfs.qcow2 guest${i}.qcow2 32G; \
+done;
 ```
 
 These CoW snapshots can now be used directly by guests:
@@ -97,14 +97,37 @@ $ balena run -it -v ${appid}_resin-data:/mnt alpine \
 
 ## Networking
 ### Shared physical device
-First, create a bridge, and assign the physical interface as a slave. This can be done on the host OS using nmcli:
+
+Check your network before you wreck your network:
+
+Find the ethernet name for example something like this eno1 or enp89s0 
+`` 
+$ ip a
+``
+
+First, create a bridge on thee ethernet port preferably(wifi will require lan and dhcp server), and assign the physical interface as a slave. This can be done on the host OS using nmcli:
 
 ```
 $ nmcli connection add type bridge ifname qemu0
 $ nmcli connection add type bridge-slave ifname eno1 master qemu0
 ```
 
+If you screw it up, then delete 
+```
+$ nmcli con show
+$ nmcli con delete UUID
+$ nmcli con add type bridge-slave ifname eno1 master qemu0
+```
+
+If you need to add back in ethernet
+```
+$ nmcli con show
+$ nmcli con delete UUID
+$ nmcli con add type ethernet ifname eno1
+```
+
 The changes will take affect after rebooting. Upon reconnecting to the device, you should see the physical interface with no address, and the bridge will now have an address.
+You should now be able to see the address in an arp -a scan.
 
 You can connect your guest to the bridge using the following QEMU options:
 ```
